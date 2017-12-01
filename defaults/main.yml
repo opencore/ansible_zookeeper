@@ -1,0 +1,26 @@
+---
+# defaults file for ansible_zookeeper
+
+# Version of Zookeeper to install
+ZOOKEEPER_VERSION: 3.4.11
+
+# Baseurl for mirror to download from
+ZOOKEEPER_MIRROR: http://ftp.halifax.rwth-aachen.de/apache/zookeeper
+
+# Path to install zookeeper under
+# role will automatically create a symlink for the most current version here and untar all versions here as well
+PACKAGE_BASE: /opt
+
+ZOOKEEPER_HOME: /opt/zookeeper
+
+# Path to keep zookeeper config in
+ZOOKEEPER_CONFIG_DIR: /etc/zookeeper
+
+# Path for zookeeper data
+ZOOKEEPER_DATA_DIR: /var/zookeeper
+
+# Path to write logs in
+ZOOKEEPER_LOG_DIR: /var/log/zookeeper
+
+# User to run zookeeper as, this will also be used as groupname
+ZOOKEEPER_USER: zookeeper

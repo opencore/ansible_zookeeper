@@ -1,0 +1,81 @@
+---
+# Purpose: Download and install zookeeper on all master servers
+#
+- name: Install necessary packages
+  yum: name={{ item }} update_cache=yes state=present
+  when: ansible_os_family == 'RedHat'
+  with_items:
+    - libselinux-python
+    - java-1.8.0-openjdk
+
+- name: Create group zookeeper
+  group:
+    name: "{{ ZOOKEEPER_USER }}"
+    state: present
+
+- name: Create user for zookeeper
+  user:
+    name: "{{ ZOOKEEPER_USER }}"
+    state: present
+    group: zookeeper
+
+- name: Create directories & set ownership
+  file:
+    path: "{{ item }}"
+    owner: "{{ ZOOKEEPER_USER }}"
+    group: "{{ ZOOKEEPER_USER }}"
+    mode: 755
+    recurse: yes
+    state: directory
+  with_items:
+    - "{{ ZOOKEEPER_CONFIG_DIR }}"
+    - "{{ ZOOKEEPER_LOG_DIR }}"
+    - "{{ ZOOKEEPER_DATA_DIR }}"
+
+- name: Download Zookeeper
+  get_url:
+    url: "{{ ZOOKEEPER_MIRROR }}/zookeeper-{{ ZOOKEEPER_VERSION }}/zookeeper-{{ ZOOKEEPER_VERSION }}.tar.gz"
+    dest: "/tmp/zookeeper-{{ ZOOKEEPER_VERSION }}.tar.gz"
+    mode: 0644
+
+- name: Untar Zookeeper
+  unarchive:
+    src: /tmp/zookeeper-{{ ZOOKEEPER_VERSION }}.tar.gz
+    dest: "{{ PACKAGE_BASE }}"
+    owner: "{{ ZOOKEEPER_USER }}"
+    group: "{{ ZOOKEEPER_USER }}"
+    copy: no
+    creates: "{{ PACKAGE_BASE }}/zookeeper-{{ ZOOKEEPER_VERSION }}"
+
+- name: Symlink Zookeeper
+  file:
+    src: "{{ PACKAGE_BASE }}/zookeeper-{{ ZOOKEEPER_VERSION }}"
+    path: "{{ ZOOKEEPER_HOME }}"
+    owner: "{{ ZOOKEEPER_USER }}"
+    group: "{{ ZOOKEEPER_USER }}"
+    state: link
+
+- name: Put Zookeeper configuration in place
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ ZOOKEEPER_USER }}"
+    group: "{{ ZOOKEEPER_USER }}"
+    mode: 0644
+  with_items:
+    - { src: "etc/zookeeper/zoo.cfg.j2", dest: "{{ ZOOKEEPER_CONFIG_DIR }}/zoo.cfg" }
+    - { src: "etc/zookeeper/log4j.properties.j2", dest: "{{ ZOOKEEPER_CONFIG_DIR }}/log4j.properties" }
+    - { src: "var/zookeeper/myid.j2", dest: "{{ ZOOKEEPER_DATA_DIR }}/myid" }
+  notify: restart zookeeper
+
+- name: Template Systemd files
+  template: src={{ item.src }} dest={{ item.dest }} owner=root group=root mode={{ item.mode }} backup=yes
+  with_items:
+    - {src: "etc/sysconfig/zookeeper.j2" , dest: "/etc/sysconfig/zookeeper", mode: "755"}
+    - {src: "lib/systemd/system/zookeeper.service.j2" , dest: "/lib/systemd/system/zookeeper.service", mode: "644"}
+
+- name: Start zookeeper
+  service:
+    name: zookeeper
+    state: started
+    enabled: yes
