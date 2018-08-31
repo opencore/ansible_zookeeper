@@ -2,7 +2,7 @@
 # defaults file for ansible_zookeeper
 
 # Version of Zookeeper to install
-ZOOKEEPER_VERSION: 3.4.11
+ZOOKEEPER_VERSION: 3.4.13
 
 # Baseurl for mirror to download from
 ZOOKEEPER_MIRROR: http://ftp.halifax.rwth-aachen.de/apache/zookeeper
